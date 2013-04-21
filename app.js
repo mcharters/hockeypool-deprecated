@@ -10,6 +10,14 @@ var express = require('express')
   , http = require('http')
   , path = require('path');
 
+/**
+ * DB dependencies.
+ */
+var mongo = require('mongodb')
+  , mongoServer = new mongo.Server('localhost', 27017, {auto_reconnect: true})
+  , mongodb = new mongo.Db('hockeypool', mongoServer);
+
+
 var app = express();
 
 // all environments
@@ -26,14 +34,20 @@ app.use(app.router);
   app.use(require('stylus').middleware(__dirname + '/public'));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// db connection
+var loadMongo = function(req, res, next) {
+	req.mongodb = mongodb;
+	next();
+};
+
 // development only
 if ('development' == app.get('env')) {
   app.use(express.errorHandler());
 }
 
 app.get('/', routes.index);
-app.get('/players', players.findAll);
-app.get('/teams', teams.findAll);
+app.get('/players', loadMongo, players.findAll);
+app.get('/teams', loadMongo, teams.findAll);
 
 http.createServer(app).listen(app.get('port'), function(){
 	console.log('Express server listening on port ' + app.get('port'));
