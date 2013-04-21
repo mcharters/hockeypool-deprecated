@@ -9,7 +9,7 @@
     "express": "3.2.0",
     "ejs": "*",
     "stylus": "*",
-    "redis": "*",
-    "socket.io": "0.9.14"
+    "socket.io": "0.9.14",
+    "mongodb": "*"
   }
 }
