@@ -5,18 +5,26 @@
 
 var express = require('express')
   , routes = require('./routes')
-  , players = require('./routes/players')
-  , teams = require('./routes/teams')
   , http = require('http')
-  , path = require('path');
+  , path = require('path')
+  , io = require('socket.io')
+  , redis = require('redis');
 
 /**
- * DB dependencies.
+ * data source setup
  */
 var mongo = require('mongodb')
   , mongoServer = new mongo.Server('localhost', 27017, {auto_reconnect: true})
   , mongodb = new mongo.Db('hockeypool', mongoServer);
+  
+var redisClient = redis.createClient();
+redisClient.flushdb();
 
+var players = mongodb.collection('players');
+
+players.find({}).each(function(err, player) {
+	if(player != null) redisClient.sadd('players', player.name);
+});
 
 var app = express();
 
@@ -24,13 +32,6 @@ var app = express();
 app.set('port', process.env.PORT || 3000);
 app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
-
-// db connection
-app.use(function(req, res, next) {
-	req.mongodb = mongodb;
-	next();
-});
-
 app.use(express.favicon());
 app.use(express.logger('dev'));
 app.use(express.bodyParser());
@@ -47,9 +48,110 @@ if ('development' == app.get('env')) {
 }
 
 app.get('/', routes.index);
-app.get('/players', players.findAll);
-app.get('/teams', teams.findAll);
+app.get('/admin', routes.admin);
+app.get('/players', function(req, res) {
+	mongodb.collection('players', function(err, collection) {
+		collection.find().toArray(function(err, items) {
+			res.send({
+				status: "success",
+				data: {
+					"players": items
+				}
+			});
+		});
+	});
+});
+app.get('/teams', function(req, res) {
+	mongodb.collection('teams', function(err, collection) {
+		collection.find().toArray(function(err, items) {
+			res.send({
+				status: "success",
+				data: {
+					"teams": items
+				}
+			});
+		});
+	});
+});
+app.get('/bots', function(req, res) {
+	redisClient.smembers(function(err, replies) {
+		res.send({
+			status: "success",
+			data: {
+				"bots" : replies
+			}
+		});
+	});
+});
 
-http.createServer(app).listen(app.get('port'), function(){
+var httpServer = http.createServer(app);
+var socketServer = io.listen(httpServer);
+
+httpServer.listen(app.get('port'), function(){
 	console.log('Express server listening on port ' + app.get('port'));
+});
+
+var sockets = {};
+var bots = [];
+var numBots;
+var turnIndex = 0;
+var numRounds = 1;
+var roundCount = 0;
+
+socketServer.sockets.on('connection', function(socket) {
+	socket.on('register', function(botName) {
+		socket.set('botName', botName);
+		redisClient.sadd('bots', botName);
+		sockets[botName] = socket;
+	});
+	
+	socket.on('pick', function(playerName) {
+		socket.get('botName', function(err, botName) {
+			redisClient.sismember('players', playerName, function(err, reply) {
+				if(reply) {
+					redisClient.sadd(botName, playerName);
+					redisClient.srem('players', playerName);
+					socketServer.sockets.emit('picked', playerName);
+					
+					turnIndex++;
+					
+					var endOfDraft = false;
+					
+					if(turnIndex == numBots) {
+						roundCount++;
+						
+						if(roundCount == numRounds) {
+							endOfDraft = true;
+						}
+						
+						turnIndex = 0;
+					}
+					
+					if(endOfDraft) {
+						socketServer.sockets.emit('theEnd');
+					} else {
+						sockets[bots[turnIndex]].emit('yourTurn');
+					}
+				} else {
+					socket.emit('yourTurn');
+				}
+			});
+		});
+	});
+	
+	socket.on('startDraft', function() {
+		redisClient.scard('bots', function(err, result) {
+			numBots = result;
+		
+			// slot the bots into their draft order
+			// TODO: make this random?
+			redisClient.smembers('bots', function(err, replies) {
+				replies.forEach(function(reply, i) {
+					bots.push(reply);
+				});
+				
+				sockets[bots[turnIndex]].emit('yourTurn');
+			});
+		});
+	});
 });

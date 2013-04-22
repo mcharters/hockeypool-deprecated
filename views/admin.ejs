@@ -5,19 +5,12 @@
     <link rel='stylesheet' href='/stylesheets/style.css' />
   </head>
   <body>
-    <h1><%= title %></h1>
-    <p>Welcome to <%= title %></p>
+    <h1>Starting Draft!</h1>
   </body>
 </html>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
 	var socket = io.connect('http://localhost:3000');
-	socket.emit('register', "My Team");
-	socket.on('yourTurn', function() {
-		socket.emit('pick', 'Sidney Crosby');
-	});
-	socket.on('theEnd', function() {
-		alert("It's over!");
-	});
+	socket.emit('startDraft');
 </script>

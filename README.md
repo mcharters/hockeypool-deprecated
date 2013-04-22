@@ -5,8 +5,11 @@ Hockey Pool Server
 
 Dependencies:
  - Install node.js v0.10.4 http://nodejs.org/dist/v0.10.4/node-v0.10.4.pkg
- - Install mongodb http://docs.mongodb.org/manual/tutorial/install-mongodb-on-os-x/
+ - Install mongodb (brew install mongodb)
+ - Install redis (brew install redis)
  - cd hockeypool && npm install
+ - run mongod
+ - run redis-server
  
 Init:
  - Install python
