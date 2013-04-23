@@ -40,6 +40,7 @@
 		var playerNames = [];
 		var teams = [];
 		
+		// connect to a socket. this IP will have to change with the network unfortunately
 		var socket = io.connect('http://192.168.0.105:3000');
 			
 		function checkReady() {
@@ -50,7 +51,7 @@
 		}
 	
 		$(document).ready(function() {
-			// get players and teams from server
+			// get player and team data from server
 			$.ajax({
 				url: "/teams",
 				success: function(result) {
@@ -75,6 +76,8 @@
 			});
 			
 			$('#goTeam').click(function() {
+				// send a 'register' method to the socket to register for the draft and
+				// include a team name. then wait for the 'yourTurn' message for your turn!
 				socket.emit('register', $('#teamName').val());
 				$('#teamNameForm').hide();
 				$('#playerPickForm').show();
@@ -83,7 +86,10 @@
 			});
 			
 			$('#goPick').click(function() {
+				// to pick, send a 'pick' message with the player name you want.
 				socket.emit('pick', $('#playerName').val());
+				
+				// this just disables the form until our next turn
 				$('#yourTeam').append('<li>' + $('#playerName').val() + '</li>');
 				$('#playerName').val("");
 				
@@ -94,15 +100,19 @@
 			});
 		});
 		
+		// this means it's our turn!
 		socket.on('yourTurn', function() {
 			$('#playerName').prop('disabled', false);
 			$('#goPick').prop('disabled', false);
 		});
 		
+		// this means a player has been picked. pickData includes the player name and 
+		// the name of the team that picked them.
 		socket.on('picked', function(pickData) {
 			$('#pickedPlayers').append('<li>' + pickData.by + ' picked ' + pickData.player + '</li>');
 		});
 		
+		// this event happens when the draft is finished.
 		socket.on('theEnd', function() {
 			alert("It's over!");
 		});
