@@ -3,21 +3,109 @@
   <head>
     <title><%= title %></title>
     <link rel='stylesheet' href='/stylesheets/style.css' />
+    <link rel="stylesheet" href="/javascripts/jquery-ui-1.10.2/themes/base/jquery-ui.css" />
   </head>
   <body>
     <h1><%= title %></h1>
     <p>Welcome to <%= title %></p>
+    
+    <div id="body">
+    	<form id="teamNameForm">
+    		<label for="teamName">Enter Your Team Name: </label>
+    		<input type="text" name="teamName" id="teamName" disabled="disabled"/>
+    		<button id="goTeam" disabled="disabled">Go</button>
+    	</form>
+    	<form id="playerPickForm" style="display: none;">
+    		<label for="entryField">Enter Your Pick: </label>
+    		<input type="text" name="playerName" id="playerName" disabled="disabled"/>
+    		<button id="goPick" disabled="disabled">Go</button>
+    	</form>
+    	<div>
+    		Your Team
+    		<ul id="yourTeam">
+    		</ul>
+    	</div>
+    	<div>
+    		Picked Players
+    		<ul id="pickedPlayers">
+    		</ul>
+    	</div>
+    </div>
+    
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/javascripts/jquery-ui-1.10.2/jquery-1.9.1.js"></script>
+    <script src="/javascripts/jquery-ui-1.10.2/ui/jquery-ui.js"></script>
+	<script>
+		var players = [];
+		var playerNames = [];
+		var teams = [];
+		
+		var socket = io.connect('http://192.168.0.105:3000');
+			
+		function checkReady() {
+			if(players.length > 0 && teams.length > 0) {
+				$('#teamName').prop("disabled", false);
+				$('#goTeam').prop("disabled", false);
+			}
+		}
+	
+		$(document).ready(function() {
+			// get players and teams from server
+			$.ajax({
+				url: "/teams",
+				success: function(result) {
+					teams = result.data.teams;
+					checkReady();
+				}
+			});
+			
+			$.ajax({
+				url: "/players",
+				success: function(result) {
+					players = result.data.players;
+					for(var i=0; i<players.length; i++) {
+						playerNames.push(players[i].name);
+					}
+					
+					$('#playerName').autocomplete({
+						source: playerNames
+					});
+					checkReady();
+				}
+			});
+			
+			$('#goTeam').click(function() {
+				socket.emit('register', $('#teamName').val());
+				$('#teamNameForm').hide();
+				$('#playerPickForm').show();
+				
+				return false;
+			});
+			
+			$('#goPick').click(function() {
+				socket.emit('pick', $('#playerName').val());
+				$('#yourTeam').append('<li>' + $('#playerName').val() + '</li>');
+				$('#playerName').val("");
+				
+				$('#playerName').prop('disabled', true);
+				$('#goPick').prop('disabled', true);
+				
+				return false;
+			});
+		});
+		
+		socket.on('yourTurn', function() {
+			$('#playerName').prop('disabled', false);
+			$('#goPick').prop('disabled', false);
+		});
+		
+		socket.on('picked', function(pickData) {
+			$('#pickedPlayers').append('<li>' + pickData.by + ' picked ' + pickData.player + '</li>');
+		});
+		
+		socket.on('theEnd', function() {
+			alert("It's over!");
+		});
+	</script>
   </body>
 </html>
-
-<script src="/socket.io/socket.io.js"></script>
-<script>
-	var socket = io.connect('http://localhost:3000');
-	socket.emit('register', "My Team");
-	socket.on('yourTurn', function() {
-		socket.emit('pick', 'Sidney Crosby');
-	});
-	socket.on('theEnd', function() {
-		alert("It's over!");
-	});
-</script>

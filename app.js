@@ -95,7 +95,7 @@ var sockets = {};
 var bots = [];
 var numBots;
 var turnIndex = 0;
-var numRounds = 1;
+var numRounds = 10;
 var roundCount = 0;
 
 socketServer.sockets.on('connection', function(socket) {
@@ -111,7 +111,7 @@ socketServer.sockets.on('connection', function(socket) {
 				if(reply) {
 					redisClient.sadd(botName, playerName);
 					redisClient.srem('players', playerName);
-					socketServer.sockets.emit('picked', playerName);
+					socketServer.sockets.emit('picked', {player: playerName, by: botName});
 					
 					turnIndex++;
 					
