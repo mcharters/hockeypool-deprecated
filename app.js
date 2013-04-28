@@ -101,6 +101,7 @@ var countUp = true;
 
 socketServer.sockets.on('connection', function(socket) {
 	socket.on('register', function(botName) {
+		console.log("Registered " + botName);
 		socket.set('botName', botName);
 		redisClient.sadd('bots', botName);
 		sockets[botName] = socket;
@@ -108,6 +109,7 @@ socketServer.sockets.on('connection', function(socket) {
 	
 	socket.on('pick', function(playerName) {
 		socket.get('botName', function(err, botName) {
+			console.log(botName + " picked " + playerName);
 			redisClient.sismember('players', playerName, function(err, reply) {
 				if(reply) {
 					redisClient.sadd(botName, playerName);
@@ -143,6 +145,7 @@ socketServer.sockets.on('connection', function(socket) {
 	});
 	
 	socket.on('startDraft', function() {
+		console.log("Draft Started!");
 		redisClient.scard('bots', function(err, result) {
 			numBots = result;
 		
