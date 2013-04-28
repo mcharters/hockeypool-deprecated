@@ -97,6 +97,7 @@ var numBots;
 var turnIndex = 0;
 var numRounds = 10;
 var roundCount = 0;
+var countUp = true;
 
 socketServer.sockets.on('connection', function(socket) {
 	socket.on('register', function(botName) {
@@ -113,18 +114,20 @@ socketServer.sockets.on('connection', function(socket) {
 					redisClient.srem('players', playerName);
 					socketServer.sockets.emit('picked', {player: playerName, by: botName});
 					
-					turnIndex++;
-					
 					var endOfDraft = false;
 					
-					if(turnIndex == numBots) {
+					if(turnIndex == numBots-1 || turnIndex == 0) {
+						// new round. time to snake!
 						roundCount++;
+						countUp = !countUp;
 						
+						// is it the end?
 						if(roundCount == numRounds) {
 							endOfDraft = true;
 						}
-						
-						turnIndex = 0;
+					} else {
+						// not a new round, find whose turn it is
+						turnIndex = (countUp ? turnIndex + 1 : turnIndex - 1);
 					}
 					
 					if(endOfDraft) {
