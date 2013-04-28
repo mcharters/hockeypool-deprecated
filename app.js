@@ -150,12 +150,23 @@ socketServer.sockets.on('connection', function(socket) {
 			numBots = result;
 		
 			// slot the bots into their draft order
-			// TODO: make this random?
 			redisClient.smembers('bots', function(err, replies) {
 				replies.forEach(function(reply, i) {
 					bots.push(reply);
 				});
 				
+				// randomize draft order via fisher-yates shuffle
+				var i = bots.length, j, tempi, tempj;
+				if(i === 0) socketServer.sockets.emit('theEnd'); // no bots in the draft!
+				while(--i) {
+					j = Math.floor(Math.random() * (i+1));
+					tempi = bots[i];
+					tempj = bots[j];
+					bots[i] = tempj;
+					bots[j] = tempi;
+				}
+				
+				// start the first round
 				sockets[bots[turnIndex]].emit('yourTurn');
 			});
 		});
