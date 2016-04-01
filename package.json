@@ -1,16 +1,19 @@
 {
-  "name": "application-name",
-  "version": "0.0.1",
-  "private": true,
+  "name": "hockeypool",
+  "version": "1.0.0",
+  "description": "Hockey! Hockey! Hockey!",
+  "main": "index.js",
   "scripts": {
-    "start": "node app.js"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "dependencies": {
-    "express": "3.2.0",
-    "ejs": "*",
-    "stylus": "*",
-    "socket.io": "0.9.14",
-    "mongodb": "*",
-    "redis": "*"
-  }
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mcharters/hockeypool.git"
+  },
+  "author": "Matt Charters",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mcharters/hockeypool/issues"
+  },
+  "homepage": "https://github.com/mcharters/hockeypool#readme"
 }
